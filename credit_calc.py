@@ -12,9 +12,9 @@ class Error(Exception):
         super(Error, self).__init__(
             error.format(*args, **kwargs) if args or kwargs else error)
 
-class LogicalError(Error):
-    def __init__(self, date):
-        super(LogicalError, self).__init__("Logical error.")
+#class LogicalError(Error):
+#    def __init__(self, date):
+#        super(LogicalError, self).__init__("Logical error.")
 
 class InvalidDateError(Error):
     def __init__(self, date):
