@@ -46,17 +46,7 @@ def _iter_months(start_date_string, end_date_string):
             year = date.year
             month = date.month + 1
 
-        day = start_day
-
-        while True:
-            try:
-                date = Date(year, month, day)
-            except ValueError:
-                if day < 28:
-                    raise LogicalError()
-                day -= 1
-            else:
-                break
+        date = _nearest_valid_date(year, month, start_day)
 
         yield date
 
@@ -64,28 +54,38 @@ def _iter_months(start_date_string, end_date_string):
 def _iter_month_interest(start_date, end_date, year_interest):
     year_interest = Decimal(year_interest) / 100
 
+    def get_credit_year(start):
+        end = _nearest_valid_date(start.year + 1, start.month, start.day)
+        year_days = (end - start).days
+        assert year_days in (365, 366)
+        day_interest = year_interest / year_days
+        return end, day_interest
+
+    credit_year_end, day_interest = get_credit_year(_parse_date(start_date))
+
     prev = None
     for cur in _iter_months(start_date, end_date):
         if prev is None:
             prev = cur
             continue
 
-        if cur.year == prev.year:
-            interest = year_interest / _year_days(cur.year) * (cur - prev).days
-        else:
-            assert cur.month == 1
-            assert prev.month == 12
+        assert cur <= credit_year_end
+        yield MonthInterest(cur, day_interest * (cur - prev).days)
 
-            prev_days = (Date(prev.year, prev.month, 31) - prev).days
-            cur_days = (cur - Date(cur.year, cur.month, 1)).days + 1
-            assert prev_days + cur_days == (cur - prev).days
+        if cur == credit_year_end:
+            credit_year_end, day_interest = get_credit_year(credit_year_end)
 
-            interest = (
-                year_interest / _year_days(prev.year) * prev_days +
-                year_interest / _year_days(cur.year) * cur_days)
-
-        yield MonthInterest(cur, interest)
         prev = cur
+
+
+def _nearest_valid_date(year, month, day):
+    while True:
+        try:
+            return Date(year, month, day)
+        except ValueError:
+            if day < 28:
+                raise InvalidDateError("{:02d}.{:02d}.{:04d}".format(day, month, year))
+            day -= 1
 
 
 def _parse_date(string):
@@ -93,6 +93,7 @@ def _parse_date(string):
         return Date.strptime(string, DATE_FORMAT)
     except ValueError:
         raise InvalidDateError(string)
+
 
 def _year_days(year):
     return 366 if calendar.isleap(year) else 365

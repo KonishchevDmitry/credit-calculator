@@ -50,9 +50,3 @@ def test_iter_month_interest():
     assert list(_iter_month_interest("31.12.2012", "28.02.2013", str(365 * 2))) == [
         MonthInterest(Date(2013, 1, 31), Decimal("0.62")),
         MonthInterest(Date(2013, 2, 28), Decimal("0.56")) ]
-
-def test_iter_month_interest_middle():
-    assert list(_iter_month_interest("29.12.2012", "29.03.2013", "365")) == [
-        MonthInterest(Date(2013, 1, 29), Decimal("365") / 366 / 100 * 2 + Decimal("0.29")),
-        MonthInterest(Date(2013, 2, 28), Decimal("0.30")),
-        MonthInterest(Date(2013, 3, 29), Decimal("0.29")) ]
