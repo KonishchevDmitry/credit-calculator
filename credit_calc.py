@@ -1,4 +1,8 @@
+import calendar
+
+from collections import namedtuple
 from datetime import datetime as Date
+from decimal import Decimal
 
 DATE_FORMAT = "%d.%m.%Y"
 
@@ -19,6 +23,9 @@ class InvalidDateError(Error):
 class InvalidDateRangeError(Error):
     def __init__(self, start, end):
         super(InvalidDateRangeError, self).__init__("Invalid date range error: {} - {}.", start, end)
+
+
+MonthInterest = namedtuple("MonthInterest", ("date", "interest"))
 
 
 def _iter_months(start_date_string, end_date_string):
@@ -54,8 +61,38 @@ def _iter_months(start_date_string, end_date_string):
         yield date
 
 
+def _iter_month_interest(start_date, end_date, year_interest):
+    year_interest = Decimal(year_interest) / 100
+
+    prev = None
+    for cur in _iter_months(start_date, end_date):
+        if prev is None:
+            prev = cur
+            continue
+
+        if cur.year == prev.year:
+            interest = year_interest / _year_days(cur.year) * (cur - prev).days
+        else:
+            assert cur.month == 1
+            assert prev.month == 12
+
+            prev_days = (Date(prev.year, prev.month, 31) - prev).days
+            cur_days = (cur - Date(cur.year, cur.month, 1)).days + 1
+            assert prev_days + cur_days == (cur - prev).days
+
+            interest = (
+                year_interest / _year_days(prev.year) * prev_days +
+                year_interest / _year_days(cur.year) * cur_days)
+
+        yield MonthInterest(cur, interest)
+        prev = cur
+
+
 def _parse_date(string):
     try:
         return Date.strptime(string, DATE_FORMAT)
     except ValueError:
         raise InvalidDateError(string)
+
+def _year_days(year):
+    return 366 if calendar.isleap(year) else 365
