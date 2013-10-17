@@ -78,6 +78,26 @@ def _iter_month_interest(start_date, end_date, year_interest):
         prev = cur
 
 
+def _count_months(start_date, end_date):
+    return reduce(lambda count, date: count + 1,
+        _iter_months(start_date, end_date), -1)
+
+
+def _round_payment(payment):
+    return payment.quantize(Decimal("1.00"))
+
+
+def _get_month_pay(start_date, end_date, credit, interest):
+    credit = Decimal(credit)
+    months = _count_months(start_date, end_date)
+    month_interest = Decimal(interest) / 12 / 100
+
+    month_pay = credit * (month_interest * (1 + month_interest) ** months) \
+        / ((1 + month_interest) ** months - 1)
+
+    return _round_payment(month_pay)
+
+
 def _nearest_valid_date(year, month, day):
     while True:
         try:

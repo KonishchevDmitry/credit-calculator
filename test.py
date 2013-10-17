@@ -5,7 +5,8 @@ from datetime import datetime as Date
 
 from credit_calc import MonthInterest
 from credit_calc import InvalidDateError, InvalidDateRangeError
-from credit_calc import _iter_months, _iter_month_interest, _parse_date
+from credit_calc import _iter_months, _iter_month_interest, _count_months
+from credit_calc import _get_month_pay, _round_payment, _parse_date
 
 
 def test_parse_date():
@@ -50,3 +51,21 @@ def test_iter_month_interest():
     assert list(_iter_month_interest("31.12.2012", "28.02.2013", str(365 * 2))) == [
         MonthInterest(Date(2013, 1, 31), Decimal("0.62")),
         MonthInterest(Date(2013, 2, 28), Decimal("0.56")) ]
+
+
+def test_count_months():
+    assert _count_months("31.12.2012", "30.04.2013") == 4
+
+
+def test_round_payment():
+    assert str(_round_payment(Decimal("100"))) == "100.00"
+    assert str(_round_payment(Decimal("0.0051"))) == "0.01"
+    assert str(_round_payment(Decimal("1000000.3433"))) == "1000000.34"
+    assert str(_round_payment(Decimal("1000000.3459"))) == "1000000.35"
+
+
+def test_get_month_pay():
+    assert _get_month_pay("28.09.2013", "28.05.2033", "731957.77", "12.25") == Decimal("8220.05")
+    assert _get_month_pay("21.12.2011", "21.12.2016", "500000", "16.65") == Decimal("12332.39")
+    assert _get_month_pay("26.12.2011", "26.12.2016", "500000", "16.65") == Decimal("12332.39")
+    assert _get_month_pay("17.05.2012", "17.05.2017", "450000", "17.5") == Decimal("11305")
