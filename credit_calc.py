@@ -4,17 +4,11 @@ from collections import namedtuple
 from datetime import datetime as Date
 from decimal import Decimal
 
-DATE_FORMAT = "%d.%m.%Y"
-
 
 class Error(Exception):
     def __init__(self, error, *args, **kwargs):
         super(Error, self).__init__(
             error.format(*args, **kwargs) if args or kwargs else error)
-
-#class LogicalError(Error):
-#    def __init__(self, date):
-#        super(LogicalError, self).__init__("Logical error.")
 
 class InvalidDateError(Error):
     def __init__(self, date):
@@ -24,8 +18,35 @@ class InvalidDateRangeError(Error):
     def __init__(self, start, end):
         super(InvalidDateRangeError, self).__init__("Invalid date range error: {} - {}.", start, end)
 
-
 MonthInterest = namedtuple("MonthInterest", ("date", "interest"))
+
+
+
+def _year_days(year):
+    return 366 if calendar.isleap(year) else 365
+
+
+def _parse_date(string):
+    try:
+        return Date.strptime(string, "%d.%m.%Y")
+    except ValueError:
+        raise InvalidDateError(string)
+
+
+def _nearest_valid_date(year, month, day):
+    date_string = "{:02d}.{:02d}.{:04d}".format(day, month, year)
+
+    if year < 1 or month < 1 or month > 12 or day < 1 or day > 31:
+        raise InvalidDateError(date_string)
+
+    while True:
+        try:
+            return Date(year, month, day)
+        except ValueError:
+            if day < 28:
+                raise InvalidDateError(date_string)
+            day -= 1
+
 
 
 def _iter_months(start_date_string, end_date_string):
@@ -83,6 +104,7 @@ def _count_months(start_date, end_date):
         _iter_months(start_date, end_date), -1)
 
 
+
 def _round_payment(payment):
     return payment.quantize(Decimal("1.00"))
 
@@ -96,24 +118,3 @@ def _get_month_pay(start_date, end_date, credit, interest):
         / ((1 + month_interest) ** months - 1)
 
     return _round_payment(month_pay)
-
-
-def _nearest_valid_date(year, month, day):
-    while True:
-        try:
-            return Date(year, month, day)
-        except ValueError:
-            if day < 28:
-                raise InvalidDateError("{:02d}.{:02d}.{:04d}".format(day, month, year))
-            day -= 1
-
-
-def _parse_date(string):
-    try:
-        return Date.strptime(string, DATE_FORMAT)
-    except ValueError:
-        raise InvalidDateError(string)
-
-
-def _year_days(year):
-    return 366 if calendar.isleap(year) else 365

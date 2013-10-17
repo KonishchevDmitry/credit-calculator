@@ -5,8 +5,14 @@ from datetime import datetime as Date
 
 from credit_calc import MonthInterest
 from credit_calc import InvalidDateError, InvalidDateRangeError
+from credit_calc import _parse_date, _nearest_valid_date, _year_days
 from credit_calc import _iter_months, _iter_month_interest, _count_months
-from credit_calc import _get_month_pay, _round_payment, _parse_date
+from credit_calc import _round_payment, _get_month_pay
+
+
+def test_year_days():
+    _year_days(2012) == 366
+    _year_days(2013) == 365
 
 
 def test_parse_date():
@@ -15,6 +21,23 @@ def test_parse_date():
 def test_parse_date_invalid():
     with pytest.raises(InvalidDateError):
         _parse_date("31.02.2013")
+
+
+def test_nearest_valid_date_valid():
+    assert _nearest_valid_date(2013, 10, 13) == Date(2013, 10, 13)
+
+def test_nearest_valid_date_invalid():
+    with pytest.raises(InvalidDateError):
+        assert _nearest_valid_date(2013, 2, 32)
+
+    with pytest.raises(InvalidDateError):
+        assert _nearest_valid_date(2013, 13, 1)
+
+    with pytest.raises(InvalidDateError):
+        assert _nearest_valid_date(0, 1, 1)
+
+def test_nearest_valid_date_invalid_for_month():
+    assert _nearest_valid_date(2013, 2, 31) == Date(2013, 2, 28)
 
 
 def test_iter_months_simple():
