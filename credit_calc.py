@@ -18,7 +18,17 @@ class InvalidDateRangeError(Error):
     def __init__(self, start, end):
         super(InvalidDateRangeError, self).__init__("Invalid date range error: {} - {}.", start, end)
 
+class InvalidPaymentDateError(Error):
+    def __init__(self, *args, **kwargs):
+        super(InvalidPaymentDateError, self).__init__(*args, **kwargs)
+
+class InvalidPaymentError(Error):
+    def __init__(self, *args, **kwargs):
+        super(InvalidPaymentError, self).__init__(*args, **kwargs)
+
+DATE_FORMAT = "%d.%m.%Y"
 MonthInterest = namedtuple("MonthInterest", ("date", "interest"))
+Payment = namedtuple("Payment", ("date", "credit_pay", "interest_pay", "month_pay", "credit"))
 
 
 
@@ -26,11 +36,18 @@ def _year_days(year):
     return 366 if calendar.isleap(year) else 365
 
 
-def _parse_date(string):
+def _get_date(date):
+    if isinstance(date, Date):
+        return date
+
     try:
-        return Date.strptime(string, "%d.%m.%Y")
+        return Date.strptime(date, DATE_FORMAT)
     except ValueError:
-        raise InvalidDateError(string)
+        raise InvalidDateError(date)
+
+
+def _format_date(date):
+    return date.strftime(DATE_FORMAT)
 
 
 def _nearest_valid_date(year, month, day):
@@ -50,8 +67,8 @@ def _nearest_valid_date(year, month, day):
 
 
 def _iter_months(start_date_string, end_date_string):
-    date = _parse_date(start_date_string)
-    end_date = _parse_date(end_date_string)
+    date = _get_date(start_date_string)
+    end_date = _get_date(end_date_string)
     start_day = date.day
 
     yield date
@@ -121,3 +138,45 @@ def _get_month_pay(start_date, end_date, credit, interest):
         / ((1 + month_interest) ** months - 1)
 
     return _round_payment(month_pay)
+
+
+def _calculate(start_date, end_date, credit, interest, payments={}):
+    start_date = _get_date(start_date)
+    end_date = _get_date(end_date)
+    credit = Decimal(credit)
+
+    payments = { _get_date(date): Decimal(payment)
+        for date, payment in payments.items() }
+
+    schedule = []
+    prev_date = start_date
+    cur_month_pay = month_pay = None
+    for date, month_interest in _iter_month_interest(start_date, end_date, interest):
+        if month_pay is None or cur_month_pay != month_pay:
+            month_pay = _get_month_pay(prev_date, end_date, credit, interest)
+
+        cur_month_pay = payments.pop(date, month_pay)
+        if cur_month_pay < month_pay:
+            raise InvalidPaymentError(
+                "Invalid payment for {}.", _format_date(date))
+
+        interest_pay = _round_payment(credit * month_interest)
+        credit_pay = cur_month_pay - interest_pay
+        credit -= credit_pay
+
+        schedule.append(Payment(
+            date, credit_pay, interest_pay, cur_month_pay, credit))
+
+        prev_date = date
+
+    if payments:
+        raise InvalidPaymentDateError("Invalid payment date: {}.",
+            _format_date(payments.keys()[0]))
+
+    if credit:
+        payment = schedule[-1]
+        schedule[-1] = Payment(
+            payment.date, payment.credit_pay + credit,
+            interest_pay, payment.month_pay + credit, 0)
+
+    return schedule
