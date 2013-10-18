@@ -75,27 +75,30 @@ def _iter_months(start_date_string, end_date_string):
 def _iter_month_interest(start_date, end_date, year_interest):
     year_interest = Decimal(year_interest) / 100
 
-    def get_credit_year(start):
-        end = _nearest_valid_date(start.year + 1, start.month, start.day)
-        year_days = (end - start).days
-        assert year_days in (365, 366)
-        day_interest = year_interest / year_days
-        return end, day_interest
-
-    credit_year_end, day_interest = get_credit_year(_parse_date(start_date))
-
     prev = None
+    day_interest = None
     for cur in _iter_months(start_date, end_date):
         if prev is None:
+            day_interest = year_interest / _year_days(cur.year)
             prev = cur
             continue
 
-        assert cur <= credit_year_end
-        yield MonthInterest(cur, day_interest * (cur - prev).days)
+        if cur.year == prev.year:
+            interest = day_interest * (cur - prev).days
+        else:
+            assert prev.month == 12
+            assert cur.month == 1
 
-        if cur == credit_year_end:
-            credit_year_end, day_interest = get_credit_year(credit_year_end)
+            prev_days = (Date(prev.year, prev.month, 31) - prev).days
+            cur_days = (cur - Date(cur.year, cur.month, 1)).days + 1
+            assert prev_days + cur_days == (cur - prev).days
 
+            interest = day_interest * prev_days
+
+            day_interest = year_interest / _year_days(cur.year)
+            interest += day_interest * cur_days
+
+        yield MonthInterest(cur, interest)
         prev = cur
 
 
