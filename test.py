@@ -275,7 +275,7 @@ def _check_payment(payment, date, credit_pay, interest_pay, month_pay, overall_p
 
 
 def test_get_credit_info():
-    info_kwargs = {
+    credit_config = {
         "credit":     "2000000",
         "interest":   "12.25",
         "start_date": "28.05.2013",
@@ -288,12 +288,13 @@ def test_get_credit_info():
         }
     }
 
-    credit_kwargs = {
-        "start_date": _get_date("28.05.2013"),
-        "end_date":   _get_date("28.05.2033"),
-    }
+    def check(info_date, credit):
+        assert get_credit_info(info_date, **credit_config) == Credit(
+            _get_date(credit_config["start_date"]), _get_date(credit_config["end_date"]), credit,
+            _calculate(credit_config["start_date"], credit_config["end_date"],
+                credit_config["credit"], credit_config["interest"], credit_config["payments"]))
 
-    assert get_credit_info(info_date=Date(1, 1, 1), **info_kwargs) == Credit(credit=2000000, **credit_kwargs)
-    assert get_credit_info(info_date="30.05.2013", **info_kwargs) == Credit(credit=2000000, **credit_kwargs)
-    assert get_credit_info(info_date="27.06.2013", **info_kwargs) == Credit(credit=2000000, **credit_kwargs)
-    assert get_credit_info(info_date="18.10.2013", **info_kwargs) == Credit(credit=Decimal("731957.77"), **credit_kwargs)
+    check(Date(1, 1, 1), 2000000)
+    check("30.05.2013", 2000000)
+    check("27.06.2013", 2000000)
+    check("18.10.2013", Decimal("731957.77"))
