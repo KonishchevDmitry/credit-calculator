@@ -3,10 +3,11 @@ import pytest
 from decimal import Decimal
 from datetime import datetime as Date
 
-from credit_calc import MonthInterest
+from credit_calc import Credit, MonthInterest
 from credit_calc import InvalidDateError, InvalidDateRangeError
 from credit_calc import InvalidPaymentError, InvalidPaymentDateError
 
+from credit_calc import get_credit_info
 from credit_calc import _get_date, _format_date, _nearest_valid_date, _year_days
 from credit_calc import _iter_months, _iter_month_interest, _count_months
 from credit_calc import _round_payment, _get_month_pay, _calculate
@@ -271,3 +272,28 @@ def _check_payment(payment, date, credit_pay, interest_pay, month_pay, overall_p
     check(payment.interest_pay, interest_pay, exact_precision)
     check(payment.credit_pay + payment.interest_pay, month_pay, overall_precision)
     check(payment.month_pay, month_pay, overall_precision)
+
+
+def test_get_credit_info():
+    info_kwargs = {
+        "credit":     "2000000",
+        "interest":   "12.25",
+        "start_date": "28.05.2013",
+        "end_date":   "28.05.2033",
+        "payments": {
+            "28.06.2013":   "110000",
+            "28.07.2013": "21394.54",
+            "28.08.2013": "21394.54",
+            "28.09.2013":  "1195000",
+        }
+    }
+
+    credit_kwargs = {
+        "start_date": _get_date("28.05.2013"),
+        "end_date":   _get_date("28.05.2033"),
+    }
+
+    assert get_credit_info(info_date=Date(1, 1, 1), **info_kwargs) == Credit(credit=2000000, **credit_kwargs)
+    assert get_credit_info(info_date="30.05.2013", **info_kwargs) == Credit(credit=2000000, **credit_kwargs)
+    assert get_credit_info(info_date="27.06.2013", **info_kwargs) == Credit(credit=2000000, **credit_kwargs)
+    assert get_credit_info(info_date="18.10.2013", **info_kwargs) == Credit(credit=Decimal("731957.77"), **credit_kwargs)
