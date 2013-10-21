@@ -3,14 +3,14 @@ import pytest
 from decimal import Decimal
 from datetime import datetime as Date
 
-from credit_calc import Credit, MonthInterest
-from credit_calc import InvalidDateError, InvalidDateRangeError
-from credit_calc import InvalidPaymentError, InvalidPaymentDateError
+from credit_calc.calculator import Credit, MonthInterest
+from credit_calc.calculator import InvalidDateError, InvalidDateRangeError
+from credit_calc.calculator import InvalidPaymentError, InvalidPaymentDateError
 
-from credit_calc import get_credit_info
-from credit_calc import _get_date, _format_date, _nearest_valid_date, _year_days
-from credit_calc import _iter_months, _iter_month_interest, _count_months
-from credit_calc import _round_payment, _get_month_pay, _calculate
+from credit_calc.calculator import get_credit_info
+from credit_calc.calculator import _get_date, _format_date, _nearest_valid_date, _year_days
+from credit_calc.calculator import _iter_months, _iter_month_interest, _count_months
+from credit_calc.calculator import _round_payment, _get_month_pay, _calculate
 
 
 def test_year_days():
@@ -276,7 +276,7 @@ def _check_payment(payment, date, credit_pay, interest_pay, month_pay, overall_p
 
 def test_get_credit_info():
     credit_config = {
-        "credit":     "2000000",
+        "amount":     "2000000",
         "interest":   "12.25",
         "start_date": "28.05.2013",
         "end_date":   "28.05.2033",
@@ -288,11 +288,12 @@ def test_get_credit_info():
         }
     }
 
-    def check(info_date, credit):
+    def check(info_date, current_amount):
         assert get_credit_info(info_date, **credit_config) == Credit(
-            _get_date(credit_config["start_date"]), _get_date(credit_config["end_date"]), credit,
+            _get_date(credit_config["start_date"]), _get_date(credit_config["end_date"]),
+            Decimal(credit_config["amount"]), current_amount,
             _calculate(credit_config["start_date"], credit_config["end_date"],
-                credit_config["credit"], credit_config["interest"], credit_config["payments"]))
+                credit_config["amount"], credit_config["interest"], credit_config["payments"]))
 
     check(Date(1, 1, 1), 2000000)
     check("30.05.2013", 2000000)

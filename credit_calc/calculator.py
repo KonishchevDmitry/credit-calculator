@@ -27,27 +27,27 @@ class InvalidPaymentError(Error):
         super(InvalidPaymentError, self).__init__(*args, **kwargs)
 
 DATE_FORMAT = "%d.%m.%Y"
-Credit = namedtuple("Credit", ("start_date", "end_date", "credit", "schedule"))
+Credit = namedtuple("Credit", ("start_date", "end_date", "amount", "current_amount", "schedule"))
 Payment = namedtuple("Payment", ("date", "credit_pay", "interest_pay", "month_pay", "credit"))
 MonthInterest = namedtuple("MonthInterest", ("date", "interest"))
 
 
 
-def get_credit_info(info_date, start_date, end_date, credit, interest, payments={}):
+def get_credit_info(info_date, start_date, end_date, amount, interest, payments={}):
     info_date = _get_date(info_date)
     start_date = _get_date(start_date)
     end_date = _get_date(end_date)
-    credit = Decimal(credit)
+    current_amount = amount = Decimal(amount)
 
-    payment_schedule = _calculate(start_date, end_date, credit, interest, payments)
+    payment_schedule = _calculate(start_date, end_date, amount, interest, payments)
 
     for payment in payment_schedule:
         if payment.date <= info_date:
-            credit = payment.credit
+            current_amount = payment.credit
         else:
             break
 
-    return Credit(start_date, end_date, credit, payment_schedule)
+    return Credit(start_date, end_date, amount, current_amount, payment_schedule)
 
 
 def _year_days(year):
