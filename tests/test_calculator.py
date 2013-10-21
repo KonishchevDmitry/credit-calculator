@@ -3,35 +3,17 @@ import pytest
 from decimal import Decimal
 from datetime import datetime as Date
 
+from credit_calc.util import InvalidDateError
+from credit_calc.util import get_date
+
 from credit_calc.calculator import Credit, MonthInterest
-from credit_calc.calculator import InvalidDateError, InvalidDateRangeError
+from credit_calc.calculator import InvalidDateRangeError
 from credit_calc.calculator import InvalidPaymentError, InvalidPaymentDateError
 
 from credit_calc.calculator import get_credit_info
-from credit_calc.calculator import _get_date, _format_date, _nearest_valid_date, _year_days
+from credit_calc.calculator import _nearest_valid_date
 from credit_calc.calculator import _iter_months, _iter_month_interest, _count_months
 from credit_calc.calculator import _round_payment, _get_month_pay, _calculate
-
-
-def test_year_days():
-    assert _year_days(2012) == 366
-    assert _year_days(2013) == 365
-
-
-def test_get_date():
-    date = Date(2013, 3, 13)
-    assert _get_date(date) is date
-
-def test_get_date_from_string():
-    assert _get_date("13.03.2013") == Date(2013, 3, 13)
-
-def test_get_date_invalid():
-    with pytest.raises(InvalidDateError):
-        _get_date("31.02.2013")
-
-
-def test_format_date():
-    assert _format_date(Date(2013, 3, 2)) == "02.03.2013"
 
 
 def test_nearest_valid_date_valid():
@@ -53,12 +35,12 @@ def test_nearest_valid_date_invalid_for_month():
 
 def test_iter_months_simple():
     assert list(_iter_months("15.03.2013", "15.05.2013")) == [
-        _get_date("15.03.2013"), _get_date("15.04.2013"), _get_date("15.05.2013") ]
+        get_date("15.03.2013"), get_date("15.04.2013"), get_date("15.05.2013") ]
 
 def test_iter_months_from_year_to_year():
     assert list(_iter_months("15.11.2013", "15.02.2014")) == [
-        _get_date("15.11.2013"), _get_date("15.12.2013"),
-        _get_date("15.01.2014"), _get_date("15.02.2014") ]
+        get_date("15.11.2013"), get_date("15.12.2013"),
+        get_date("15.01.2014"), get_date("15.02.2014") ]
 
 def test_iter_months_invalid_date():
     with pytest.raises(InvalidDateError):
@@ -76,9 +58,9 @@ def test_iter_months_invalid_range():
 
 def test_iter_months_with_non_existing_days_in_months():
     assert list(_iter_months("31.12.2012", "30.04.2013")) == [
-        _get_date("31.12.2012"), _get_date("31.01.2013"),
-        _get_date("28.02.2013"), _get_date("31.03.2013"),
-        _get_date("30.04.2013") ]
+        get_date("31.12.2012"), get_date("31.01.2013"),
+        get_date("28.02.2013"), get_date("31.03.2013"),
+        get_date("30.04.2013") ]
 
 
 def test_iter_month_interest():
@@ -267,7 +249,7 @@ def _check_payment(payment, date, credit_pay, interest_pay, month_pay, overall_p
     exact_precision = Decimal("0.01")
     overall_precision = Decimal(overall_precision)
 
-    assert payment.date == _get_date(date)
+    assert payment.date == get_date(date)
     check(payment.credit_pay, credit_pay, overall_precision)
     check(payment.interest_pay, interest_pay, exact_precision)
     check(payment.credit_pay + payment.interest_pay, month_pay, overall_precision)
@@ -290,7 +272,7 @@ def test_get_credit_info():
 
     def check(info_date, current_amount):
         assert get_credit_info(info_date, **credit_config) == Credit(
-            _get_date(credit_config["start_date"]), _get_date(credit_config["end_date"]),
+            get_date(credit_config["start_date"]), get_date(credit_config["end_date"]),
             Decimal(credit_config["amount"]), current_amount,
             _calculate(credit_config["start_date"], credit_config["end_date"],
                 credit_config["amount"], credit_config["interest"], credit_config["payments"]))

@@ -1,5 +1,3 @@
-import datetime
-
 from decimal import Decimal, DecimalException
 
 from object_validator import validate
@@ -8,15 +6,19 @@ from object_validator import String, List, Dict, DictScheme
 
 import python_config
 
+from credit_calc.util import InvalidDateError
+from credit_calc.util import get_date
+
 
 class _Date(String):
     def validate(self, obj):
         super(_Date, self).validate(obj)
 
         try:
-            return datetime.datetime.strptime(obj, "%d.%m.%Y")
-        except ValueError:
+            return get_date(obj)
+        except InvalidDateError:
             raise InvalidValueError(obj)
+
 
 class _Amount(String):
     def validate(self, obj):
@@ -31,6 +33,7 @@ class _Amount(String):
             raise InvalidValueError(obj)
 
         return amount
+
 
 class _Interest(String):
     def validate(self, obj):
@@ -57,7 +60,7 @@ def _get_config(config_path):
     try:
         return validate("config", config, DictScheme({
             "credits": List(DictScheme({
-                "credit":     _Amount(),
+                "amount":     _Amount(),
                 "interest":   _Interest(),
                 "start_date": _Date(),
                 "end_date":   _Date(),

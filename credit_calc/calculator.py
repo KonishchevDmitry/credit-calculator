@@ -1,18 +1,10 @@
-import calendar
-
 from collections import namedtuple
 from datetime import datetime as Date
 from decimal import Decimal
 
+from credit_calc.util import Error, InvalidDateError
+from credit_calc.util import get_date, format_date, year_days
 
-class Error(Exception):
-    def __init__(self, error, *args, **kwargs):
-        super(Error, self).__init__(
-            error.format(*args, **kwargs) if args or kwargs else error)
-
-class InvalidDateError(Error):
-    def __init__(self, date):
-        super(InvalidDateError, self).__init__("Invalid date: {}.", date)
 
 class InvalidDateRangeError(Error):
     def __init__(self, start, end):
@@ -26,7 +18,6 @@ class InvalidPaymentError(Error):
     def __init__(self, *args, **kwargs):
         super(InvalidPaymentError, self).__init__(*args, **kwargs)
 
-DATE_FORMAT = "%d.%m.%Y"
 Credit = namedtuple("Credit", ("start_date", "end_date", "amount", "current_amount", "schedule"))
 Payment = namedtuple("Payment", ("date", "credit_pay", "interest_pay", "month_pay", "credit"))
 MonthInterest = namedtuple("MonthInterest", ("date", "interest"))
@@ -34,9 +25,9 @@ MonthInterest = namedtuple("MonthInterest", ("date", "interest"))
 
 
 def get_credit_info(info_date, start_date, end_date, amount, interest, payments={}):
-    info_date = _get_date(info_date)
-    start_date = _get_date(start_date)
-    end_date = _get_date(end_date)
+    info_date = get_date(info_date)
+    start_date = get_date(start_date)
+    end_date = get_date(end_date)
     current_amount = amount = Decimal(amount)
 
     payment_schedule = _calculate(start_date, end_date, amount, interest, payments)
@@ -48,24 +39,6 @@ def get_credit_info(info_date, start_date, end_date, amount, interest, payments=
             break
 
     return Credit(start_date, end_date, amount, current_amount, payment_schedule)
-
-
-def _year_days(year):
-    return 366 if calendar.isleap(year) else 365
-
-
-def _get_date(date):
-    if isinstance(date, Date):
-        return date
-
-    try:
-        return Date.strptime(date, DATE_FORMAT)
-    except ValueError:
-        raise InvalidDateError(date)
-
-
-def _format_date(date):
-    return date.strftime(DATE_FORMAT)
 
 
 def _nearest_valid_date(year, month, day):
@@ -85,8 +58,8 @@ def _nearest_valid_date(year, month, day):
 
 
 def _iter_months(start_date_string, end_date_string):
-    date = _get_date(start_date_string)
-    end_date = _get_date(end_date_string)
+    date = get_date(start_date_string)
+    end_date = get_date(end_date_string)
     start_day = date.day
 
     yield date
@@ -114,7 +87,7 @@ def _iter_month_interest(start_date, end_date, year_interest):
     day_interest = None
     for cur in _iter_months(start_date, end_date):
         if prev is None:
-            day_interest = year_interest / _year_days(cur.year)
+            day_interest = year_interest / year_days(cur.year)
             prev = cur
             continue
 
@@ -130,7 +103,7 @@ def _iter_month_interest(start_date, end_date, year_interest):
 
             interest = day_interest * prev_days
 
-            day_interest = year_interest / _year_days(cur.year)
+            day_interest = year_interest / year_days(cur.year)
             interest += day_interest * cur_days
 
         yield MonthInterest(cur, interest)
@@ -159,11 +132,11 @@ def _get_month_pay(start_date, end_date, credit, interest):
 
 
 def _calculate(start_date, end_date, credit, interest, payments={}):
-    start_date = _get_date(start_date)
-    end_date = _get_date(end_date)
+    start_date = get_date(start_date)
+    end_date = get_date(end_date)
     credit = Decimal(credit)
 
-    payments = { _get_date(date): Decimal(payment)
+    payments = { get_date(date): Decimal(payment)
         for date, payment in payments.items() }
 
     schedule = []
@@ -176,7 +149,7 @@ def _calculate(start_date, end_date, credit, interest, payments={}):
         cur_month_pay = payments.pop(date, month_pay)
         if cur_month_pay < month_pay:
             raise InvalidPaymentError(
-                "Invalid payment for {}.", _format_date(date))
+                "Invalid payment for {}.", format_date(date))
 
         interest_pay = _round_payment(credit * month_interest)
         credit_pay = cur_month_pay - interest_pay
@@ -189,7 +162,7 @@ def _calculate(start_date, end_date, credit, interest, payments={}):
 
     if payments:
         raise InvalidPaymentDateError("Invalid payment date: {}.",
-            _format_date(payments.keys()[0]))
+            format_date(payments.keys()[0]))
 
     if credit:
         payment = schedule[-1]
