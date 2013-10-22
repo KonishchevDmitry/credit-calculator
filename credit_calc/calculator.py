@@ -1,3 +1,5 @@
+import functools
+
 from collections import namedtuple
 from datetime import datetime as Date
 from decimal import Decimal
@@ -118,7 +120,7 @@ def _iter_month_interest(start_date, end_date, year_interest):
 
 
 def _count_months(start_date, end_date):
-    return reduce(lambda count, date: count + 1,
+    return functools.reduce(lambda count, date: count + 1,
         _iter_months(start_date, end_date), -1)
 
 
@@ -169,7 +171,7 @@ def _calculate(start_date, end_date, credit, interest, payments={}):
 
     if payments:
         raise InvalidPaymentDateError("Invalid payment date: {}.",
-            format_date(payments.keys()[0]))
+            format_date(payments.popitem()[0]))
 
     if credit:
         payment = schedule[-1]
