@@ -13,7 +13,7 @@ from credit_calc.util import format_date
 
 def parse_args():
     config_path = "~/.credits.conf"
-    parser = argparse.ArgumentParser(description="Credit caclulator.")
+    parser = argparse.ArgumentParser(description="Credit calculator")
     parser.add_argument("--config", default=os.path.expanduser(config_path),
         help="path to the credit configuration file (default is {})".format(config_path))
     parser.add_argument("--all", action="store_true", help="show all credits (not only active)")
