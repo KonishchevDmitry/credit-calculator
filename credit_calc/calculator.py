@@ -30,22 +30,28 @@ def get_credit_info(info_date, start_date, end_date, amount, interest, payments=
     info_date = get_date(info_date)
     start_date = get_date(start_date)
     end_date = get_date(end_date)
-    current_amount = amount = Decimal(amount)
+    amount = Decimal(amount)
     interest = Decimal(interest)
 
     payment_schedule = _calculate(start_date, end_date, amount, interest, payments)
 
     month_pay = None
-    prev_date = start_date
-    for payment in payment_schedule:
-        if not (payment.date <= info_date or prev_date < info_date):
-            break
 
-        if payment.date <= info_date:
-            current_amount = payment.credit
+    if info_date <= end_date:
+        prev_date = start_date
+        current_amount = amount
 
-        month_pay = payment.month_pay
-        prev_date = payment.date
+        for payment in payment_schedule:
+            if not (payment.date <= info_date or prev_date < info_date):
+                break
+
+            if payment.date <= info_date:
+                current_amount = payment.credit
+
+            month_pay = payment.month_pay
+            prev_date = payment.date
+    else:
+        current_amount = 0
 
     return Credit(start_date, end_date, amount, current_amount, interest, month_pay, payment_schedule)
 
