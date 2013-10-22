@@ -18,7 +18,7 @@ class InvalidPaymentError(Error):
     def __init__(self, *args, **kwargs):
         super(InvalidPaymentError, self).__init__(*args, **kwargs)
 
-Credit = namedtuple("Credit", ("start_date", "end_date", "amount", "current_amount", "schedule"))
+Credit = namedtuple("Credit", ("start_date", "end_date", "amount", "current_amount", "interest", "month_pay", "schedule"))
 Payment = namedtuple("Payment", ("date", "credit_pay", "interest_pay", "month_pay", "credit"))
 MonthInterest = namedtuple("MonthInterest", ("date", "interest"))
 
@@ -29,16 +29,23 @@ def get_credit_info(info_date, start_date, end_date, amount, interest, payments=
     start_date = get_date(start_date)
     end_date = get_date(end_date)
     current_amount = amount = Decimal(amount)
+    interest = Decimal(interest)
 
     payment_schedule = _calculate(start_date, end_date, amount, interest, payments)
 
+    month_pay = None
+    prev_date = start_date
     for payment in payment_schedule:
-        if payment.date <= info_date:
-            current_amount = payment.credit
-        else:
+        if not (payment.date <= info_date or prev_date < info_date):
             break
 
-    return Credit(start_date, end_date, amount, current_amount, payment_schedule)
+        if payment.date <= info_date:
+            current_amount = payment.credit
+
+        month_pay = payment.month_pay
+        prev_date = payment.date
+
+    return Credit(start_date, end_date, amount, current_amount, interest, month_pay, payment_schedule)
 
 
 def _nearest_valid_date(year, month, day):

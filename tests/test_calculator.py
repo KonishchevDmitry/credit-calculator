@@ -270,14 +270,15 @@ def test_get_credit_info():
         }
     }
 
-    def check(info_date, current_amount):
+    def check(info_date, current_amount, month_pay):
         assert get_credit_info(info_date, **credit_config) == Credit(
             get_date(credit_config["start_date"]), get_date(credit_config["end_date"]),
-            Decimal(credit_config["amount"]), current_amount,
+            Decimal(credit_config["amount"]), Decimal(current_amount),
+            Decimal(credit_config["interest"]), None if month_pay is None else Decimal(month_pay),
             _calculate(credit_config["start_date"], credit_config["end_date"],
                 credit_config["amount"], credit_config["interest"], credit_config["payments"]))
 
-    check(Date(1, 1, 1), 2000000)
-    check("30.05.2013", 2000000)
-    check("27.06.2013", 2000000)
-    check("18.10.2013", Decimal("731957.77"))
+    check(Date(1, 1, 1), 2000000, None)
+    check("30.05.2013", 2000000, 110000)
+    check("27.06.2013", 2000000, 110000)
+    check("18.10.2013", "731957.77", "8220.05")
