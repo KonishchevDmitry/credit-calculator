@@ -1,7 +1,7 @@
 import pytest
 
 from decimal import Decimal
-from datetime import datetime as Date
+from datetime import date as Date
 
 from credit_calc.util import InvalidDateError
 from credit_calc.util import get_date

@@ -1,7 +1,7 @@
 import functools
 
 from collections import namedtuple
-from datetime import datetime as Date
+from datetime import date as Date
 from decimal import Decimal
 
 from credit_calc.util import Error, InvalidDateError

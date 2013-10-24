@@ -1,5 +1,5 @@
 import calendar
-from datetime import datetime as Date
+import datetime
 
 DATE_FORMAT = "%d.%m.%Y"
 
@@ -15,11 +15,11 @@ class InvalidDateError(Error):
 
 
 def get_date(date):
-    if isinstance(date, Date):
+    if isinstance(date, datetime.date):
         return date
 
     try:
-        return Date.strptime(date, DATE_FORMAT)
+        return datetime.datetime.strptime(date, DATE_FORMAT).date()
     except ValueError:
         raise InvalidDateError(date)
 

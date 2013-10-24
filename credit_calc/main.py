@@ -49,7 +49,7 @@ def print_credits(credits, print_all, with_schedule):
         print("No credits specified.")
         return
 
-    today = datetime.datetime.today()
+    today = datetime.date.today()
 
     credits = sorted((
         calculator.get_credit_info(today, **credit)
