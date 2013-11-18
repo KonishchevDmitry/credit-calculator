@@ -31,6 +31,8 @@ def print_payment_schedule(credits):
             Column("credit",       "Credit"                                 ),
         ])
 
+        total_payments = 0
+
         for payment in credit.schedule:
             table.add_row({
                 "date":         format_date(payment.date),
@@ -39,6 +41,10 @@ def print_payment_schedule(credits):
                 "total":        payment.month_pay,
                 "credit":       payment.credit,
             })
+            total_payments += payment.month_pay
+
+        table.add_row({})
+        table.add_row({ "total": total_payments })
 
         table.draw("\n\nPayment schedule for {} credit from {}:".format(
             credit.amount, format_date(credit.start_date)))
